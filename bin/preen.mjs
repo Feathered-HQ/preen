@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+import { runCli } from "../dist/cli.js"
+
+runCli(process.argv.slice(2)).then(
+	(exitCode) => {
+		process.exit(exitCode)
+	},
+	(error) => {
+		console.error(error)
+		process.exit(2)
+	},
+)

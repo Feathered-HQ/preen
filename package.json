@@ -1,0 +1,59 @@
+{
+	"bin": {
+		"preen": "./bin/preen.mjs"
+	},
+	"dependencies": {
+		"jiti": "2.4.2",
+		"kleur": "4.1.5",
+		"oxc-parser": "0.49.0",
+		"oxc-resolver": "5.0.1",
+		"picomatch": "4.0.2",
+		"tinyglobby": "0.2.10",
+		"zod": "4.1.12"
+	},
+	"description": "Architecture linter for TypeScript monorepos — enforces folder shape, filename and export conventions, banned names, and import boundaries. Standalone, no ESLint required.",
+	"devDependencies": {
+		"@types/node": "24.13.2",
+		"@types/picomatch": "4.0.0",
+		"tsx": "4.20.3",
+		"typescript": "5.7.2"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"exports": {
+		".": {
+			"default": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./define-config": {
+			"default": "./dist/define-config.js",
+			"types": "./dist/define-config.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"bin",
+		"README.md",
+		"LICENSE"
+	],
+	"license": "MIT",
+	"main": "./dist/index.js",
+	"name": "@feathered/preen",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Feathered-HQ/preen.git"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"check": "node ./bin/preen.mjs check",
+		"dev": "tsc -p tsconfig.json --watch",
+		"prepare": "tsc -p tsconfig.json",
+		"test": "node --test --import tsx ./tests/*.test.ts",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"version": "0.1.0"
+}
