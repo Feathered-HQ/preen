@@ -88,18 +88,32 @@ export const createResolver = (options: ResolverOptions): ImportResolver => {
 		resolve: (fromFile, request) => {
 			if (isBuiltin(request)) return { external: true }
 			const directory = path.dirname(fromFile)
-			try {
-				const result: any = factory.sync(directory, request)
-				if (result.error !== undefined && result.error !== null && result.error !== "") {
-					return { error: String(result.error) }
-				}
-				if (typeof result.path === "string" && result.path.length > 0) {
-					return { resolved: result.path }
-				}
-				return { error: "no resolution" }
-			} catch (error) {
-				return { error: (error as Error).message }
+			const requests = [request]
+			if (request.startsWith(".") && request.endsWith(".js")) {
+				requests.push(`${request.slice(0, -3)}.ts`, `${request.slice(0, -3)}.tsx`)
+			} else if (request.startsWith(".") && request.endsWith(".jsx")) {
+				requests.push(`${request.slice(0, -4)}.tsx`)
 			}
+			let lastError = "no resolution"
+			for (const candidate of requests) {
+				try {
+					const result: any = factory.sync(directory, candidate)
+					if (
+						result.error !== undefined &&
+						result.error !== null &&
+						result.error !== ""
+					) {
+						lastError = String(result.error)
+						continue
+					}
+					if (typeof result.path === "string" && result.path.length > 0) {
+						return { resolved: result.path }
+					}
+				} catch (error) {
+					lastError = (error as Error).message
+				}
+			}
+			return { error: lastError }
 		},
 	}
 }

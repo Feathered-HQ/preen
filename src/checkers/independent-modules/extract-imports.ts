@@ -2,6 +2,7 @@ export type ImportSite = {
 	source: string
 	start: number
 	end: number
+	kind: "runtime" | "type"
 }
 
 export const extractImports = (program: any): ImportSite[] => {
@@ -15,6 +16,7 @@ export const extractImports = (program: any): ImportSite[] => {
 						source: statement.source.value,
 						start: statement.source.start,
 						end: statement.source.end,
+						kind: statement.importKind === "type" ? "type" : "runtime",
 					})
 				}
 				break
@@ -29,6 +31,7 @@ export const extractImports = (program: any): ImportSite[] => {
 						source: statement.source.value,
 						start: statement.source.start,
 						end: statement.source.end,
+						kind: statement.exportKind === "type" ? "type" : "runtime",
 					})
 				}
 				break

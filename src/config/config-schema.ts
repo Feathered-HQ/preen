@@ -107,12 +107,17 @@ const bannedPatternSchema = z.object({
 	reason: z.string().optional(),
 })
 
+const graphConfigSchema = z.object({
+	sliceId: z.string().min(1),
+})
+
 export const configSchema = z.object({
 	root: z.string().default("."),
 	workspaceRoot: z.string().optional(),
 	include: z.array(z.string()).default(["src/**/*.{ts,tsx,js,jsx,mjs,cjs}"]),
 	ignorePatterns: z.array(z.string()).default([]),
 	tsconfig: z.string().optional(),
+	graph: graphConfigSchema.optional(),
 	folderStructure: folderStructureSchema.optional(),
 	namingRules: z.array(namingRuleSchema).default([]),
 	independentModules: z.array(independentModuleSchema).default([]),
@@ -143,3 +148,4 @@ export type NamingTarget = z.infer<typeof namingTargetSchema>
 export type NamingKind = z.infer<typeof namingKindSchema>
 export type IndependentModuleRule = z.infer<typeof independentModuleSchema>
 export type BannedPattern = z.infer<typeof bannedPatternSchema>
+export type GraphConfig = z.infer<typeof graphConfigSchema>

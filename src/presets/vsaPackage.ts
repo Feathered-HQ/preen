@@ -33,6 +33,10 @@ export type VsaPackageOptions = {
 	 *   `**\/*.test.{ts,tsx}`.
 	 */
 	extraIgnorePatterns?: string[]
+	/** Graph metadata. Defaults to the final segment of `path`. */
+	graph?: {
+		sliceId?: string
+	}
 	/**
 	 * Replace whole sections of the generated config. Use sparingly —
 	 * the whole point of this preset is to NOT need overrides.
@@ -77,6 +81,11 @@ const vsaBannedPatterns = () => [
 	{
 		pattern: "**/index.{ts,tsx}",
 		reason: "barrel exports are banned (VSA rule 8) — use `exports` map",
+	},
+	{
+		pattern: "**/lib/**/*.tsx",
+		reason:
+			"`.tsx` belongs in `components/` or `routes/` — `lib/` is runtime helpers only",
 	},
 ]
 
@@ -228,7 +237,7 @@ const vsaFolderStructure = () => {
 const vsaNamingRules = () => [
 	// Anything inside any `lib/` (tier-level OR per-component).
 	{
-		filePattern: "src/**/lib/**/*.{ts,tsx}",
+		filePattern: "src/**/lib/**/*.ts",
 		forbidDefaultExport: true,
 		requireFilenameMatchesExport: true,
 		requireSingleExport: true,
@@ -478,22 +487,6 @@ const vsaIndependentModules = (path: string, peers: string[]) => {
 			),
 			module: `${me}/client/lib/**/*.ts`,
 		},
-		// client/lib/*.tsx: internal UI modules (flat, one export per file) —
-		// same composer permissions as component folder roots.
-		{
-			allowImportsFrom: allow(
-				sharedFor("components"),
-				[
-					`${me}/client/lib/**`,
-					`${me}/client/mutations/**`,
-					`${me}/client/queries/**`,
-					`${me}/client/hooks/**`,
-				],
-				clientTypesAccess(),
-				peerClientFor("components")
-			),
-			module: `${me}/client/lib/**/*.tsx`,
-		},
 		{
 			allowImportsFrom: allow(
 				sharedFor("mutations"),
@@ -647,7 +640,15 @@ const STANDARD_IGNORES = [
  *   • test files ignored
  */
 export const vsaPackage = (options: VsaPackageOptions): UserConfig => {
-	const { path, peers = [], extraIgnorePatterns = [], overrides = {} } = options
+	const {
+		path,
+		peers = [],
+		extraIgnorePatterns = [],
+		graph,
+		overrides = {},
+	} = options
+	const normalizedPath = path.replace(/[\\/]+$/, "")
+	const defaultSliceId = normalizedPath.split(/[\\/]/).pop() ?? normalizedPath
 
 	const base: UserConfig = {
 		bannedPatterns: vsaBannedPatterns(),
@@ -656,6 +657,7 @@ export const vsaPackage = (options: VsaPackageOptions): UserConfig => {
 		forbidRelativeParentImports: false,
 		ignorePatterns: [...STANDARD_IGNORES, ...extraIgnorePatterns],
 		include: ["src/**/*.{ts,tsx}"],
+		graph: { sliceId: graph?.sliceId ?? defaultSliceId },
 		independentModules: vsaIndependentModules(path, peers),
 		namingRules: vsaNamingRules(),
 		requireTestPairing: true,

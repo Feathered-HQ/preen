@@ -31,3 +31,40 @@ export {
 export type { ConfigValidationIssue } from "./checkers/validate/validateConfig.js"
 export { formatShowConfig } from "./checkers/show/showConfig.js"
 export type { ShowConfigInput } from "./checkers/show/showConfig.js"
+
+export { defineWorkspace, loadWorkspace } from "./workspace/index.js"
+export type {
+	LoadedWorkspace,
+	LoadedWorkspaceProject,
+	UserWorkspaceConfig,
+	WorkspaceConfig,
+} from "./workspace/index.js"
+
+export {
+	analyzeGraphHealth,
+	buildDependencyGraph,
+	diffGraphs,
+	diffProjectedGraphs,
+	normalizeGraph,
+	parseSnapshot,
+	projectGraph,
+	renderGraphDiffMermaid,
+	renderGraphMermaid,
+	serializeSnapshot,
+} from "./graph/index.js"
+export type {
+	DependencyGraph,
+	DependencyKind,
+	GraphDiff,
+	GraphEdge,
+	GraphFile,
+	GraphHealth,
+	GraphProjectionOptions,
+	GraphSlice,
+	GraphStatus,
+	ProjectedEdge,
+	ProjectedGraph,
+	ProjectedGraphDiff,
+	ProjectedNode,
+	UnresolvedImport,
+} from "./graph/index.js"

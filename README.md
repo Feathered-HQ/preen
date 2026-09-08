@@ -81,7 +81,9 @@ All commands resolve config and `tsconfig.json` from the current working directo
 preen check                     # run all four checkers
 preen validate                  # self-consistency check on the config alone
 preen explain <file>            # show which rules apply to a given file
-preen graph                     # emit a Mermaid diagram of the import graph
+preen visualize rules           # emit configured import rules as Mermaid
+preen graph                     # emit observed source dependencies as Mermaid
+preen snapshot                  # update the committed dependency snapshot
 ```
 
 Common flags:
@@ -93,6 +95,12 @@ Common flags:
 | `--json` | machine-readable output (CI / GitHub Actions annotations / SARIF later) |
 | `--no-color` | disable ANSI colors |
 | `--max-warnings <n>` | treat as failure when warnings exceed `n` |
+| `--output <path>` | write graph or snapshot output to a file |
+| `--scope <value>` | graph `all`, one `slice:<id>`, or a repository-relative `path:<directory>` |
+| `--granularity <value>` | render `slice` or `file` nodes |
+| `--after-depth <n\|all>` | outgoing dependency levels to include (default: `all`) |
+| `--behind-depth <n\|all>` | incoming dependent levels to include (default: `0`) |
+| `--format <value>` | graph output as `mermaid`, `markdown`, `json`, or `text` |
 | `--help`, `-h` | help text |
 
 Exit codes:
@@ -167,13 +175,103 @@ File: src/server/foo.test.ts
   ignored — matches **/*.test.{ts,tsx}
 ```
 
-### `graph` — visualize the import graph
+### `visualize rules` — visualize configured boundaries
 
 ```bash
-$ preen graph > docs/architecture/imports.mmd
+$ preen visualize rules > docs/architecture/import-rules.mmd
 ```
 
-Outputs Mermaid syntax. Render with any Mermaid renderer (GitHub markdown, mermaid.live, the VS Code Mermaid extension, etc.) for a visual dependency graph. Useful in architecture reviews and onboarding docs.
+This is the former `preen graph` behavior. It renders the intended
+`independentModules` relationships from configuration; it does not scan imports.
+
+### Dependency graphs and snapshots
+
+Create a workspace manifest at the repository root. Explicit project patterns
+keep fixtures and unrelated packages out of the graph:
+
+```ts
+// preen.workspace.ts
+import { defineWorkspace } from "@feathered/preen"
+
+export default defineWorkspace({
+	projects: ["common/preen.config.ts", "slices/*/preen.config.ts"],
+	graph: {
+		snapshot: ".preen/dependency-graph.snapshot.json",
+	},
+})
+```
+
+`vsaPackage({ path: "slices/mcp" })` uses `mcp` as its graph slice ID. It can
+be overridden when the directory name is not the desired stable identity:
+
+```ts
+vsaPackage({
+	path: "slices/mcp",
+	graph: { sliceId: "model-context-protocol" },
+})
+```
+
+Generate the deterministic, repository-relative JSON snapshot and commit it:
+
+```bash
+preen snapshot
+preen snapshot --check   # exits 1 when source and snapshot differ
+```
+
+Render the whole workspace as one node per slice, or inspect files in one slice:
+
+```bash
+preen graph --scope all --granularity slice
+preen graph --scope slice:mcp --granularity file
+preen graph --scope path:slices/mcp/src/client --granularity file
+preen graph --format markdown > docs/architecture/dependencies.md
+```
+
+Focused graphs traverse every outgoing dependency by default and omit incoming
+dependents. Control both directions independently:
+
+```bash
+preen graph \
+	--scope path:slices/mcp/src/client/components \
+	--granularity file \
+	--after-depth 3 \
+	--behind-depth 1
+```
+
+Depth `0` retains only the selected scope, a positive integer includes that many
+relationship levels, and `all` follows the complete reachable graph. At file
+granularity, reached files remain individual nodes even when they belong to
+another slice. At slice granularity, traversal operates on aggregated slices.
+Markdown output includes graph size, density, cycles, fan-in/fan-out hotspots,
+and a Mermaid diagram.
+
+Compare the committed snapshot with live source, or compare two stored snapshots:
+
+```bash
+preen graph diff \
+	--base .preen/dependency-graph.snapshot.json \
+	--scope slice:mcp \
+	--granularity file \
+	--format markdown
+
+preen graph diff --base base.json --head head.json --granularity slice
+```
+
+Added nodes and edges render green; removed nodes and edges render red and
+dashed. Unchanged context remains grey. Ordinary graph changes exit successfully.
+Selected regressions can fail a build:
+
+```bash
+preen graph diff \
+	--base base.json \
+	--head head.json \
+	--fail-on new-cycles,new-unresolved-imports
+```
+
+The snapshot always stores the full file graph. Scope and granularity are applied
+when rendering, so one snapshot supports whole-workspace, slice-level, and
+file-level views and diffs. Mermaid output can be rendered by GitHub Markdown,
+mermaid.live, or editor extensions.
 
 ---
 
